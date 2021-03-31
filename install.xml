@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<modification>
+	<name>Most Viewed product</name>
+	<code>Most_Viewed</code>
+	<version>1.0.1</version>
+	<author>Victor Galiuzov</author>
+	<link>https://webpagestudio.net</link>
+	<file path="catalog/model/catalog/product.php">
+		<operation>
+			<search><![CDATA[
+public function getBestSellerProducts($limit) {
+			]]></search>
+			<add position="before"><![CDATA[
+public function getViewedProducts($limit) {
+        $product_data = $this->cache->get('product.viewed.' . (int)$this->config->get('config_language_id') . '.' . (int)$this->config->get('config_store_id') . '.' . $this->config->get('config_customer_group_id') . '.' . (int)$limit);
+
+        if (!$product_data) {
+            $product_data = [];
+
+            $query = $this->db->query("SELECT p.product_id, p.viewed, p.status, p.date_available  FROM " . DB_PREFIX . "product p
+            LEFT JOIN " . DB_PREFIX . "product_to_store p2s ON ( p.product_id = p2s.product_id )
+            WHERE p.date_available <= NOW() AND p.status = '1' AND p2s.store_id = '" . (int)$this->config->get('config_store_id') . "'
+            ORDER BY viewed DESC LIMIT " . (int)$limit);
+
+            foreach ($query->rows as $result) {
+                $product_data[$result['product_id']] = $this->getProduct($result['product_id']);
+            }
+
+            $this->cache->set('product.bestseller.' . (int)$this->config->get('config_language_id') . '.' . (int)$this->config->get('config_store_id') . '.' . $this->config->get('config_customer_group_id') . '.' . (int)$limit, $product_data);
+        }
+
+        return $product_data;
+    }
+			]]></add>
+		</operation>
+	</file>
+</modification>
